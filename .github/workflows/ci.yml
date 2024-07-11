@@ -45,7 +45,8 @@ jobs:
       run: |
         if [[ "${{ matrix.config.arch }}" == "win-x86" ]]; then
           echo TARGET="--target i686-pc-windows-msvc" >> $GITHUB_ENV
-          rustup target add i686-pc-windows-msvc
+          #rustup target add i686-pc-windows-msvc
+          cargo build --release --target i686-pc-windows-msvc
         else
           echo TARGET="" >> $GITHUB_ENV
         fi
