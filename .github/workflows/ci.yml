@@ -2,20 +2,34 @@ name: Build and Test
 
 on:
   push:
-    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    name: build (${{ matrix.config.arch }})
+    strategy:
+      matrix:
+        config:
+          - os: windows-latest
+            arch: win-x64
+          - os: ubuntu-latest
+            arch: linux-x64
+          - os: macos-latest
+            arch: macos-arm64
+          - os: macos-12
+            arch: macos-x64
+    runs-on: ${{ matrix.config.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install libudev for Linux
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y libudev-dev
