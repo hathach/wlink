@@ -4,6 +4,12 @@ on:
   push:
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+  release:
+    types:
+      - created
+  schedule: # Every day at the 2 P.M. (UTC) we run a scheduled nightly build
+    - cron: "0 14 * * *"
 
 env:
   CARGO_TERM_COLOR: always
@@ -39,6 +45,7 @@ jobs:
       run: |
         if [[ "${{ matrix.config.arch }}" == "win-x86" ]]; then
           echo TARGET="--target i686-pc-windows-msvc" >> $GITHUB_ENV
+          rustup target add i686-pc-windows-msvc
         else
           echo TARGET="" >> $GITHUB_ENV
         fi
@@ -52,6 +59,7 @@ jobs:
 
     - name: Prepare artifacts
       run: |
+        ls target/
         if [[ "${{ matrix.config.arch }}" == "win-x64" ]]; then
           WLINK_EXE="target/release/wlink.exe"
         elif [[ "${{ matrix.config.arch }}" == "win-x86" ]]; then
@@ -68,3 +76,59 @@ jobs:
       with:
         name: wlink-${{ matrix.config.arch }}
         path: wlink-${{ matrix.config.arch }}
+
+#    - name: Prepare Release Asset
+#      if: github.event_name == 'release'
+#      run: |
+#        if [[ "${{ runner.os }}" == "Windows" ]]; then
+#          7z a -tzip wchisp-${{ github.event.release.tag_name }}-${{ matrix.config.arch }}.zip wchisp-${{ matrix.config.arch }}
+#        else
+#          tar -czvf wchisp-${{ github.event.release.tag_name }}-${{ matrix.config.arch }}.tar.gz wchisp-${{ matrix.config.arch }}
+#        fi
+#      shell: bash
+#    - name: Upload Release Asset
+#      uses: softprops/action-gh-release@v2
+#      if: github.event_name == 'release'
+#      with:
+#        fail_on_unmatched_files: false
+#        files: |
+#          wchisp-*.tar.gz
+#          wchisp-*.zip
+#
+#  nightly-release:
+#    needs: build
+#    runs-on: ubuntu-latest
+#    if: github.event_name == 'schedule'
+#    steps:
+#      - name: Download Artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          path: ./
+#
+#      - name: Prepare Nightly Asset
+#        run: |
+#          ls -R ./
+#          for f in wchisp-*; do
+#            echo "Compressing $f"
+#            if [[ $f == wchisp-win* ]]; then
+#              zip -r $f.zip $f
+#            else
+#              tar -czvf $f.tar.gz $f
+#            fi
+#          done
+#          ls ./
+#
+#      - name: Update Nightly Release
+#        uses: andelf/nightly-release@main
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          tag_name: nightly
+#          name: "wchisp nightly release $$"
+#          draft: false
+#          prerelease: true
+#          body: |
+#            This is a nightly binary release of the wchisp command line tool.
+#          files: |
+#            wchisp-*.tar.gz
+#            wchisp-*.zip
