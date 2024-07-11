@@ -105,6 +105,7 @@ jobs:
           path: wlink-macos-arm64.tar.gz
 
   release:
+    if: false
     needs: [build, build-macos-arm64, build-win-x86]
     runs-on: ubuntu-22.04
     steps:
