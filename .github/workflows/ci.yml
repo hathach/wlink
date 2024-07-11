@@ -20,6 +20,8 @@ jobs:
         config:
           - os: windows-latest
             arch: win-x64
+          - os: windows-latest
+            arch: win-x86
           - os: ubuntu-latest
             arch: linux-x64
           - os: macos-latest
@@ -33,9 +35,35 @@ jobs:
     - name: Install libudev for Linux
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y libudev-dev
+    - name: Set target
+      run: |
+        if [[ "${{ matrix.config.arch }}" == "win-x86" ]]; then
+          echo TARGET="--target i686-pc-windows-msvc" >> $GITHUB_ENV
+        else
+          echo TARGET="" >> $GITHUB_ENV
+        fi
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --release $TARGET
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --release $TARGET --verbose
     - name: Run help
-      run: cargo run -- --help
+      run: cargo run --release $TARGET -- --help
+
+    - name: Prepare artifacts
+      run: |
+        if [[ "${{ matrix.config.arch }}" == "win-x64" ]]; then
+          WLINK_EXE="target/release/wlink.exe"
+        elif [[ "${{ matrix.config.arch }}" == "win-x86" ]]; then
+          WLINK_EXE="target/i686-pc-windows-msvc/release/wlink.exe"
+        else
+          WLINK_EXE="target/release/wlink"
+        fi
+
+        mkdir wlink-${{ matrix.config.arch }}
+        cp $WLINK_EXE wlink-${{ matrix.config.arch }}
+        cp README.md wlink-${{ matrix.config.arch }}
+      shell: bash
+    - uses: actions/upload-artifact@v4
+      with:
+        name: wlink-${{ matrix.config.arch }}
+        path: wlink-${{ matrix.config.arch }}
