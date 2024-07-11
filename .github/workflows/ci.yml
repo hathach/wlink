@@ -42,6 +42,7 @@ jobs:
         else
           echo TARGET="" >> $GITHUB_ENV
         fi
+      shell: bash
     - name: Build
       run: cargo build --release $TARGET
     - name: Run tests
